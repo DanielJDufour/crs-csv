@@ -3,7 +3,7 @@ from csv import DictReader, DictWriter, QUOTE_ALL
 from math import ceil
 from os.path import isfile
 from requests import get
-from enums import crs_formats, skip_these
+from enums import crs_formats
 
 fieldnames = ['code'] + crs_formats
 delimiter = "\t"
@@ -49,8 +49,8 @@ for kind in ["CRS-GEOGCRS", "CRS-PROJCRS"]:
   for i in range(num_pages):
     if i % 10 == 0:
       print("on page " + str(i) + " of " + str(num_pages))
-      if i != 0:
-        break
+      #if i != 0:
+      #  break
     data = get(kind_url + "&page=" + str(i+1)).json()
     for crs in data['results']:
       crs_index += 1
@@ -60,7 +60,6 @@ for kind in ["CRS-GEOGCRS", "CRS-PROJCRS"]:
         code_url = base_url + "/" + str(code)
         page_text = get(code_url).text
         soup = BeautifulSoup(page_text, features="lxml")
-        #print("soup:", soup)
         if "fictitious" not in page_text and "s_proj4_text" in page_text and "s_xml" in page_text and "s_gml" in page_text:
           row = {
             'code': code,
@@ -76,22 +75,6 @@ for kind in ["CRS-GEOGCRS", "CRS-PROJCRS"]:
             'wkt': clean_text(soup.find(id="s_wkt_text").text),
             'xml': clean_text(soup.find(id="s_xml_text").text)
           }
-          #print("row:", row)
-          """
-          for crs_format in crs_formats:
-            if crs_format in ['esriwkt','geoserver','gml','js','mapfile','mapnik','postgis','prettywkt','proj4','proj4js','sql','wkt','xml']:
-              continue
-
-            crs_format_url = code_url + "." + crs_format
-            try:
-                row[crs_format] = get(crs_format_url).text.strip()
-            except Exception as e:
-              print("crs_format:", crs_format)
-              print("crs_index:", crs_index)
-              #print("exception getting " + crs_format_url)
-              print(e)
-              raise e
-          """
           with open(filename, "a") as f:
             DictWriter(f, delimiter=delimiter, fieldnames=fieldnames, quoting=QUOTE_ALL).writerow(row)
 
